@@ -17,9 +17,9 @@ Backend da plataforma **DevShowcase**.
 **Objetivo da atividade:** nesta primeira etapa do projeto prático, dar início ao desenvolvimento do backend da plataforma DevShowcase API, implementando a fundação arquitetural da aplicação com suporte a persistência de dados relacional.
 
 **Requisitos técnicos entregues:**
-1. Projeto Node.js/Express estruturado, com repositório git público e `.gitignore` adequado.
+1. Projeto Java/Spring Boot estruturado, com repositório git público e `.gitignore` adequado.
 2. Modelagem das entidades `Profile`, `Project`, `Technology` e `Feedback`, com os relacionamentos `Profile 1:N Project`, `Project N:N Technology` e `Project 1:N Feedback`.
-3. Repositórios de persistência e DTOs de entrada (com validação de campos obrigatórios e URLs) e de saída.
+3. Repositórios de persistência (Spring Data JPA) e DTOs de entrada (com validação Bean Validation de campos obrigatórios e URLs) e de saída.
 4. Endpoints REST implementados e testados: `POST/GET /api/profiles`, `POST/GET /api/technologies` e `POST/GET /api/projects`.
 
 ## Sumário
@@ -40,13 +40,13 @@ Backend da plataforma **DevShowcase**.
 
 | Camada          | Tecnologia                                    |
 |-----------------|------------------------------------------------|
-| Runtime         | Node.js (≥ 18)                                 |
-| Framework HTTP  | Express                                        |
-| ORM             | Sequelize — PostgreSQL                        |
-| Banco de dados  | PostgreSQL (via `pg`/`pg-hstore`)              |
+| Runtime         | Java (≥ 21)                                    |
+| Framework HTTP  | Spring Boot (Spring MVC)                       |
+| ORM             | Spring Data JPA / Hibernate — PostgreSQL       |
+| Banco de dados  | PostgreSQL (driver `org.postgresql`)           |
 | Containers      | Docker + Docker Compose                        |
-| Validação       | Joi (DTOs de entrada)                          |
-| Testes          | Jest + Supertest                               |
+| Validação       | Bean Validation / Hibernate Validator (DTOs)   |
+| Testes          | JUnit 5 + MockMvc (H2 em memória)              |
 
 ## Modelagem de domínio
 
@@ -94,46 +94,45 @@ Fluxo de uma requisição, camada por camada:
 
 ```mermaid
 flowchart LR
-    A[Rota] --> B[Middleware de validação<br/>Joi / DTO de entrada]
-    B --> C[Controller]
+    A[Controller] --> B[Bean Validation<br/>DTO de entrada]
+    B --> C[Service]
     C --> D[Repository]
-    D --> E[Model Sequelize]
+    D --> E[Entidade JPA]
     E --> F[(Banco de dados)]
     C --> G[DTO de saída]
     G --> H[Resposta JSON]
 ```
 
 ```
-src/
-  config/database.js   # Configuração do Sequelize (PostgreSQL)
-  models/               # Entidades e associações (Profile, Project, Technology, Feedback)
-  dtos/                 # Schemas de validação (entrada) e formatação (saída)
-  repositories/         # Camada de acesso a dados (queries Sequelize)
-  controllers/          # Lógica de cada endpoint
-  routes/                # Definição das rotas REST
-  middlewares/           # Validação de entrada e tratamento de erros
-  app.js                 # Configuração do Express
-  server.js              # Ponto de entrada: conecta ao banco e sobe o servidor
+src/main/java/br/uab/uespi/devshowcase/api/
+  entity/               # Entidades JPA e associações (Profile, Project, Technology, Feedback)
+  dto/request/          # DTOs de entrada com Bean Validation
+  dto/response/         # DTOs de saída (formatação da resposta)
+  repository/           # Spring Data JPA (queries)
+  service/               # Regras de negócio de cada endpoint
+  controller/            # Definição das rotas REST
+  exception/             # Exceções customizadas e tratamento global de erros
+  config/                # Configuração de CORS
+  DevshowcaseApiApplication.java  # Ponto de entrada Spring Boot
+src/main/resources/application.yml  # Configuração do datasource PostgreSQL
+src/test/java/...       # Testes de integração (JUnit 5 + MockMvc)
 scripts/
-  demo.js                # Script de demonstração ao vivo (chama todos os endpoints)
-  demo.html              # Mesma demonstração, executável direto no navegador
   init-multiple-databases.sh  # Cria os bancos dev/test no container do PostgreSQL
-tests/
-  *.test.js              # Testes de integração (Jest + Supertest)
-Dockerfile               # Imagem da API (Node 20)
+pom.xml                  # Dependências e build Maven
+Dockerfile               # Build multi-stage (Maven + JRE 21)
 docker-compose.yml        # Sobe API + PostgreSQL localmente
 ```
 
 ## Pré-requisitos
 
-- Node.js ≥ 18 instalado (`node --version`) — necessário apenas para rodar sem Docker.
-- Uma instância PostgreSQL acessível (local ou remota) e sua connection string — ou Docker + Docker Compose para subir tudo localmente.
+- JDK ≥ 21 e Maven ≥ 3.9 instalados (`java -version`, `mvn -version`) — necessário apenas para rodar sem Docker.
+- Uma instância PostgreSQL acessível (local ou remota) e sua connection string JDBC — ou Docker + Docker Compose para subir tudo localmente.
 
 ## Como rodar localmente
 
 ### Opção A — Docker Compose (recomendado)
 
-Sobe a API e o PostgreSQL juntos, sem precisar instalar Node ou Postgres na máquina:
+Sobe a API e o PostgreSQL juntos, sem precisar instalar Java ou Postgres na máquina:
 
 ```bash
 git clone <url-do-seu-repositorio>
@@ -142,30 +141,28 @@ cp .env.example .env
 docker compose up --build
 ```
 
-A API fica disponível em `http://localhost:3555` e o PostgreSQL em `localhost:5432` (usuário/senha `postgres`, bancos `devshowcase` e `devshowcase_test`). Para rodar em segundo plano, use `docker compose up --build -d`; para parar, `docker compose down` (adicione `-v` para apagar também o volume de dados).
+A API fica disponível em `http://localhost:3577` e o PostgreSQL em `localhost:5432` (usuário/senha `postgres`, bancos `devshowcase` e `devshowcase_test`). Para rodar em segundo plano, use `docker compose up --build -d`; para parar, `docker compose down` (adicione `-v` para apagar também o volume de dados).
 
-> Não rode a imagem isoladamente com `docker run` — o `DATABASE_URL` e as demais variáveis só são injetadas pelo serviço `api` do `docker-compose.yml`. Use sempre `docker compose up`.
+> Não rode a imagem isoladamente com `docker run` — o `SPRING_DATASOURCE_URL` e as demais variáveis só são injetadas pelo serviço `api` do `docker-compose.yml`. Use sempre `docker compose up`.
 
-### Opção B — Node.js local
+### Opção B — Java local
 
 ```bash
 git clone <url-do-seu-repositorio>
 cd devshowcase-api
-npm install
 cp .env.example .env
-# edite o .env e defina DATABASE_URL com a connection string do seu PostgreSQL
-npm run dev   # ou: npm start
+# edite o .env e defina SPRING_DATASOURCE_URL/USERNAME/PASSWORD com a connection string do seu PostgreSQL
+mvn spring-boot:run
 ```
 
-Ao subir, o console deve mostrar:
+Ao subir, o console deve mostrar algo como:
 
 ```
-Conexão com o banco de dados estabelecida com sucesso.
-Modelos sincronizados com o banco de dados.
-DevShowcase API rodando em http://localhost:3555
+Tomcat started on port 3577 (http)
+Started DevshowcaseApiApplication in X seconds
 ```
 
-O banco PostgreSQL precisa existir previamente (ex.: `createdb devshowcase`, ou automaticamente via `docker compose up`); os models são sincronizados automaticamente via `sequelize.sync()` na inicialização. Defina `DATABASE_URL` no `.env` apontando para essa instância.
+O banco PostgreSQL precisa existir previamente (ex.: `createdb devshowcase`, ou automaticamente via `docker compose up`); as tabelas são sincronizadas automaticamente pelo Hibernate (`ddl-auto: update`) na inicialização. Defina as variáveis `SPRING_DATASOURCE_*` no `.env` apontando para essa instância.
 
 ## Roteiro de apresentação (demo ao vivo)
 
@@ -173,15 +170,16 @@ Para demonstrar a API funcionando, use **dois terminais**:
 
 **Terminal 1 — sobe o servidor e deixe rodando:**
 ```bash
-npm run dev
+mvn spring-boot:run
 ```
 
-**Terminal 2 — executa a demonstração dos endpoints:**
+**Terminal 2 — executa a demonstração dos endpoints (via curl, por exemplo):**
 ```bash
-npm run demo
+curl -X POST http://localhost:3577/api/profiles -H "Content-Type: application/json" \
+  -d '{"name":"Ana Souza","email":"ana@example.com"}'
 ```
 
-O script [`scripts/demo.js`](scripts/demo.js) chama, em sequência, **todos os 6 endpoints** exigidos contra o servidor real, organizados em 5 seções, e imprime no console a requisição enviada e a resposta recebida:
+A demonstração deve percorrer, em sequência, **todos os 6 endpoints** exigidos contra o servidor real:
 
 1. **Profiles** — `POST /api/profiles` (cria) e `GET /api/profiles/:id` (busca, com `projects: []`)
 2. **Technologies** — `POST /api/technologies` (cria) e `GET /api/technologies` (lista)
@@ -191,13 +189,7 @@ O script [`scripts/demo.js`](scripts/demo.js) chama, em sequência, **todos os 6
 
 Cada execução gera dados novos (e-mail/nome com timestamp), então o script pode ser rodado várias vezes seguidas sem erro de duplicidade — ideal para repetir a demonstração ao vivo.
 
-Se o servidor não estiver rodando, o script avisa claramente em vez de travar:
-```
-Não foi possível conectar em http://localhost:3555/api.
-Certifique-se de que o servidor está rodando (npm run dev) antes de executar o demo.
-```
-
-**Alternativa visual pelo navegador:** abra [`scripts/demo.html`](scripts/demo.html) diretamente no navegador (duplo clique no arquivo ou `file://.../scripts/demo.html`) e clique em **"Rodar demonstração"**. A página executa a mesma sequência de 5 seções via `fetch`, exibindo cada requisição e resposta na tela — útil para quem preferir mostrar a demo em uma janela do navegador em vez do terminal.
+Se o servidor não estiver rodando, o `curl` retornará erro de conexão recusada — certifique-se de que o servidor está no ar (`mvn spring-boot:run`) antes de testar os endpoints.
 
 ## Endpoints da API
 
@@ -229,7 +221,7 @@ Validações: `name` obrigatório e não vazio · `email` obrigatório, formato 
 
 **POST /api/technologies**
 ```json
-{ "name": "Node.js" }
+{ "name": "Spring Boot" }
 ```
 Validações: `name` obrigatório, não vazio e único (409 se duplicado).
 
@@ -255,68 +247,64 @@ Validações: `title` obrigatório e não vazio · `repositoryUrl` obrigatória 
 
 ```bash
 # Criar perfil
-curl -X POST http://localhost:3555/api/profiles \
+curl -X POST http://localhost:3577/api/profiles \
   -H "Content-Type: application/json" \
   -d '{"name":"Ana Souza","email":"ana@example.com"}'
 
 # Buscar perfil
-curl http://localhost:3555/api/profiles/1
+curl http://localhost:3577/api/profiles/1
 
 # Criar tecnologia
-curl -X POST http://localhost:3555/api/technologies \
-  -H "Content-Type: application/json" -d '{"name":"Node.js"}'
+curl -X POST http://localhost:3577/api/technologies \
+  -H "Content-Type: application/json" -d '{"name":"Spring Boot"}'
 
 # Listar tecnologias
-curl http://localhost:3555/api/technologies
+curl http://localhost:3577/api/technologies
 
 # Criar projeto
-curl -X POST http://localhost:3555/api/projects \
+curl -X POST http://localhost:3577/api/projects \
   -H "Content-Type: application/json" \
   -d '{"title":"DevShowcase API","repositoryUrl":"https://github.com/ana/devshowcase","profileId":1,"technologyIds":[1]}'
 
 # Listar projetos
-curl http://localhost:3555/api/projects
+curl http://localhost:3577/api/projects
 ```
 
 ### Testando pelo navegador
 
 A barra de endereço do navegador só faz requisições `GET`, então funciona diretamente para:
-- `http://localhost:3555/api/profiles/1`
-- `http://localhost:3555/api/technologies`
-- `http://localhost:3555/api/projects`
+- [http://localhost:3577/api/profiles/1](http://localhost:3577/api/profiles/1)
+- [http://localhost:3577/api/technologies](http://localhost:3577/api/technologies)
+- [http://localhost:3577/api/projects](http://localhost:3577/api/projects)
 
 Para testar os endpoints `POST` pelo navegador, abra o **DevTools (F12) → Console** e rode `fetch`:
 
 ```js
-fetch('http://localhost:3555/api/technologies', {
+fetch('http://localhost:3577/api/technologies', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ name: 'Node.js' }),
+  body: JSON.stringify({ name: 'Spring Boot' }),
 }).then((r) => r.json()).then(console.log);
 ```
 
 ## Testes automatizados
 
-Testes de integração (Jest + Supertest) cobrem os 6 endpoints exigidos, incluindo casos de sucesso, validação e erro (404/409) — 18 testes ao todo, em 3 suítes (`profile`, `technology`, `project`).
+Testes de integração (JUnit 5 + MockMvc) cobrem os 6 endpoints exigidos, incluindo casos de sucesso, validação e erro (404/409), em 3 suítes (`ProfileControllerTest`, `TechnologyControllerTest`, `ProjectControllerTest`).
 
-Os testes rodam contra um banco PostgreSQL isolado (`devshowcase_test`, criado automaticamente pelo `docker-compose.yml`), não contra o banco de desenvolvimento. Suba o Postgres antes de testar:
+Os testes rodam contra um banco H2 em memória (perfil `test`, veja `src/test/resources/application-test.yml`), isolado do banco de desenvolvimento, sem precisar de Postgres rodando:
 
 ```bash
-docker compose up -d postgres   # garante o Postgres (e o banco devshowcase_test) disponível em localhost:5432
-npm test
+mvn test
 ```
-
-Por padrão os testes usam `postgres://postgres:postgres@localhost:5432/devshowcase_test`; defina `TEST_DATABASE_URL` no ambiente para apontar para outro banco.
 
 ## Solução de problemas
 
 | Sintoma | Causa provável | Solução |
 |---|---|---|
-| `DATABASE_URL não definida` ao subir a API | `.env` ausente ou variável não configurada | `cp .env.example .env` e defina `DATABASE_URL` (ou use `docker compose up`, que já injeta a variável) |
+| Erro ao conectar no banco ao subir a API | `.env` ausente ou variável não configurada | `cp .env.example .env` e defina `SPRING_DATASOURCE_URL` (ou use `docker compose up`, que já injeta a variável) |
 | Erro ao rodar a imagem com `docker run` direto | Variáveis de ambiente do serviço `api` só existem via Compose | Use `docker compose up --build` em vez de `docker run` na imagem isolada |
-| `GET /api/technologies` ou `/api/projects` retornam `[]` | Banco recém-criado, sem registros | Normal em um banco novo; cadastre dados via `POST` ou rode `npm run demo` |
-| Testes falham por timeout/conexão recusada | PostgreSQL de teste não está rodando | `docker compose up -d postgres` antes de `npm test` |
-| Porta `3555` já em uso | Outro processo/serviço ocupando a porta | Altere `PORT` no `.env` (e em `docker-compose.yml`, se necessário) |
+| `GET /api/technologies` ou `/api/projects` retornam `[]` | Banco recém-criado, sem registros | Normal em um banco novo; cadastre dados via `POST` |
+| Porta `3577` já em uso | Outro processo/serviço ocupando a porta | Altere `SERVER_PORT` no `.env` (e em `docker-compose.yml`, se necessário) |
 
 ## Próximas etapas
 
@@ -325,3 +313,5 @@ Por padrão os testes usam `postgres://postgres:postgres@localhost:5432/devshowc
 - Autenticação/autorização para os endpoints de escrita.
 - Deploy da imagem Docker em um ambiente gerenciado (ex.: Render, Railway, AKS).
 
+#   a t v 1 _ j a v a _ b a c k e n d  
+ 
