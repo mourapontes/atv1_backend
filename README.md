@@ -169,33 +169,57 @@ O banco PostgreSQL precisa existir previamente (ex.: `createdb devshowcase`, ou 
 
 ## Roteiro de apresentação (demo ao vivo)
 
-Para demonstrar a API funcionando, use **dois terminais**:
+Roteiro para gravar o vídeo de apresentação (5 a 8 minutos), demonstrando os **6 endpoints exigidos** com a requisição sendo executada e a resposta da API aparecendo no console — **sem Postman**, usando apenas `curl` no terminal (compartilhando a tela inteira).
+
+Use **dois terminais**:
 
 **Terminal 1 — sobe o servidor e deixe rodando:**
 ```bash
 npm run dev
 ```
 
-**Terminal 2 — executa a demonstração dos endpoints:**
+**Terminal 2 — executa cada requisição na ordem abaixo, mostrando o comando e a resposta:**
+
+**1. `POST /api/profiles`** — cadastro de perfil com validações
 ```bash
-npm run demo
+curl -X POST http://localhost:3555/api/profiles \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Ana Souza","email":"ana@example.com","bio":"Dev backend"}'
 ```
 
-O script [`scripts/demo.js`](scripts/demo.js) chama, em sequência, **todos os 6 endpoints** exigidos contra o servidor real, organizados em 5 seções, e imprime no console a requisição enviada e a resposta recebida:
-
-1. **Profiles** — `POST /api/profiles` (cria) e `GET /api/profiles/:id` (busca, com `projects: []`)
-2. **Technologies** — `POST /api/technologies` (cria) e `GET /api/technologies` (lista)
-3. **Projects** — `POST /api/projects` (cria vinculando o profile e a technology criados) e `GET /api/projects` (lista)
-4. **Relacionamento Profile 1:N Project** — repete `GET /api/profiles/:id`, agora mostrando o projeto já vinculado em `projects`
-5. **Validação de DTOs** — dois exemplos de erro `400` (perfil sem `name`/com `email` inválido; projeto com `title` vazio, `repositoryUrl` inválida e `profileId` inexistente)
-
-Cada execução gera dados novos (e-mail/nome com timestamp), então o script pode ser rodado várias vezes seguidas sem erro de duplicidade — ideal para repetir a demonstração ao vivo.
-
-Se o servidor não estiver rodando, o script avisa claramente em vez de travar:
+**2. `GET /api/profiles/:id`** — busca o perfil criado (use o `id` retornado no passo 1)
+```bash
+curl http://localhost:3555/api/profiles/1
 ```
-Não foi possível conectar em http://localhost:3555/api.
-Certifique-se de que o servidor está rodando (npm run dev) antes de executar o demo.
+
+**3. `POST /api/technologies`** — cadastro de tecnologia com validações
+```bash
+curl -X POST http://localhost:3555/api/technologies \
+  -H "Content-Type: application/json" -d '{"name":"Node.js"}'
 ```
+
+**4. `GET /api/technologies`** — listagem de todas as tecnologias
+```bash
+curl http://localhost:3555/api/technologies
+```
+
+**5. `POST /api/projects`** — cadastro de projeto com validações (vinculando o `profileId` e o `technologyIds` criados acima)
+```bash
+curl -X POST http://localhost:3555/api/projects \
+  -H "Content-Type: application/json" \
+  -d '{"title":"DevShowcase API","repositoryUrl":"https://github.com/ana/devshowcase","profileId":1,"technologyIds":[1]}'
+```
+
+**6. `GET /api/projects`** — listagem de projetos
+```bash
+curl http://localhost:3555/api/projects
+```
+
+**Extra opcional (mostra a validação dos DTOs):** repita o passo 1 sem o campo `name`, ou o passo 5 com `title` vazio, para exibir a resposta `400` com as mensagens de erro.
+
+> Alternativa automatizada: `npm run demo` (script [`scripts/demo.js`](scripts/demo.js)) executa essa mesma sequência sozinho, imprimindo cada requisição e resposta no console — útil para conferir o roteiro antes de gravar, mas para o vídeo em si prefira rodar os `curl` acima manualmente, pausando em cada resposta.
+
+Se o servidor não estiver rodando, tanto o `curl` (connection refused) quanto o `npm run demo` avisam que a API precisa estar de pé (`npm run dev`) antes de qualquer requisição.
 
 ## Endpoints da API
 
