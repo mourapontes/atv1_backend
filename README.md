@@ -32,6 +32,7 @@ Backend da plataforma **DevShowcase**.
 - [Como rodar localmente](#como-rodar-localmente)
 - [Roteiro de apresentação (demo ao vivo)](#roteiro-de-apresentação-demo-ao-vivo)
 - [Endpoints da API](#endpoints-da-api)
+- [Testando localmente pelo navegador](#testando-localmente-pelo-navegador)
 - [Testes automatizados](#testes-automatizados)
 - [Solução de problemas](#solução-de-problemas)
 - [Próximas etapas](#próximas-etapas)
@@ -116,7 +117,6 @@ src/
   server.js              # Ponto de entrada: conecta ao banco e sobe o servidor
 scripts/
   demo.js                # Script de demonstração ao vivo (chama todos os endpoints)
-  demo.html              # Mesma demonstração, executável direto no navegador
   init-multiple-databases.sh  # Cria os bancos dev/test no container do PostgreSQL
 tests/
   *.test.js              # Testes de integração (Jest + Supertest)
@@ -197,8 +197,6 @@ Não foi possível conectar em http://localhost:3555/api.
 Certifique-se de que o servidor está rodando (npm run dev) antes de executar o demo.
 ```
 
-**Alternativa visual pelo navegador:** abra [`scripts/demo.html`](scripts/demo.html) diretamente no navegador (duplo clique no arquivo ou `file://.../scripts/demo.html`) e clique em **"Rodar demonstração"**. A página executa a mesma sequência de 5 seções via `fetch`, exibindo cada requisição e resposta na tela — útil para quem preferir mostrar a demo em uma janela do navegador em vez do terminal.
-
 ## Endpoints da API
 
 | Método | Rota                     | Descrição                              |
@@ -278,14 +276,17 @@ curl -X POST http://localhost:3555/api/projects \
 curl http://localhost:3555/api/projects
 ```
 
-### Testando pelo navegador
+## Testando localmente pelo navegador
 
-A barra de endereço do navegador só faz requisições `GET`, então funciona diretamente para:
-- `http://localhost:3555/api/profiles/1`
-- `http://localhost:3555/api/technologies`
-- `http://localhost:3555/api/projects`
+Com o servidor rodando (`npm run dev` ou `docker compose up`), a barra de endereço do navegador já faz requisições `GET` diretamente, sem precisar de `curl` ou Postman. Clique nos links abaixo (com a API de pé em `localhost:3555`):
 
-Para testar os endpoints `POST` pelo navegador, abra o **DevTools (F12) → Console** e rode `fetch`:
+- [http://localhost:3555/api/profiles/1](http://localhost:3555/api/profiles/1)
+- [http://localhost:3555/api/technologies](http://localhost:3555/api/technologies)
+- [http://localhost:3555/api/projects](http://localhost:3555/api/projects)
+
+> Esses links só funcionam com a API rodando na sua máquina; o Markdown do GitHub não resolve `localhost`, então abra-os a partir do seu editor/navegador local.
+
+Para testar os endpoints `POST` pelo navegador, abra o **DevTools (F12) → Console** (em qualquer aba, inclusive em branco) e rode `fetch`:
 
 ```js
 fetch('http://localhost:3555/api/technologies', {
