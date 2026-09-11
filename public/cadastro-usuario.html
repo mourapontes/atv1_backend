@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DevShowcase — Cadastro de Usuário</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --error: #f87171;
+      --success: #34d399;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      color: var(--text);
+      padding: 24px;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+      width: 100%;
+      max-width: 440px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin: 0 0 4px;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 0.9rem;
+      margin: 0 0 24px;
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+    .field {
+      margin-bottom: 18px;
+    }
+    input, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #0f172a;
+      color: var(--text);
+      font-size: 0.95rem;
+      font-family: inherit;
+    }
+    input:focus, textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .hint {
+      font-size: 0.75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: white;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    button:hover { background: var(--primary-hover); }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    #result {
+      margin-top: 18px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      display: none;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    #result.success {
+      display: block;
+      background: rgba(52, 211, 153, 0.12);
+      border: 1px solid var(--success);
+      color: var(--success);
+    }
+    #result.error {
+      display: block;
+      background: rgba(248, 113, 113, 0.12);
+      border: 1px solid var(--error);
+      color: var(--error);
+    }
+    .api-config {
+      margin-bottom: 20px;
+    }
+    .api-config .hint { margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Cadastro de usuário</h1>
+    <p class="subtitle">Cria um novo perfil de desenvolvedor via <code>POST /api/profiles</code>.</p>
+
+    <div class="field api-config">
+      <label for="apiUrl">URL da API</label>
+      <input type="url" id="apiUrl" value="http://localhost:3555/api/profiles" />
+      <p class="hint">Altere se a API estiver rodando em outra porta/host.</p>
+    </div>
+
+    <form id="profileForm" novalidate>
+      <div class="field">
+        <label for="name">Nome *</label>
+        <input type="text" id="name" name="name" required maxlength="120" placeholder="Ana Souza" />
+      </div>
+
+      <div class="field">
+        <label for="email">E-mail *</label>
+        <input type="email" id="email" name="email" required placeholder="ana@example.com" />
+      </div>
+
+      <div class="field">
+        <label for="bio">Bio</label>
+        <textarea id="bio" name="bio" maxlength="1000" placeholder="Dev backend apaixonada por APIs"></textarea>
+      </div>
+
+      <div class="field">
+        <label for="avatarUrl">URL do avatar</label>
+        <input type="url" id="avatarUrl" name="avatarUrl" placeholder="https://example.com/ana.png" />
+      </div>
+
+      <button type="submit" id="submitBtn">Cadastrar usuário</button>
+    </form>
+
+    <div id="result"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('profileForm');
+    const submitBtn = document.getElementById('submitBtn');
+    const resultBox = document.getElementById('result');
+
+    function showResult(message, type) {
+      resultBox.textContent = message;
+      resultBox.className = type;
+    }
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      resultBox.className = '';
+      resultBox.textContent = '';
+
+      const apiUrl = document.getElementById('apiUrl').value.trim();
+      const payload = {
+        name: document.getElementById('name').value.trim(),
+        email: document.getElementById('email').value.trim(),
+        bio: document.getElementById('bio').value.trim() || undefined,
+        avatarUrl: document.getElementById('avatarUrl').value.trim() || undefined,
+      };
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Enviando...';
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        const data = await response.json().catch(() => null);
+
+        if (response.ok) {
+          showResult(`Usuário cadastrado com sucesso!\n\n${JSON.stringify(data, null, 2)}`, 'success');
+          form.reset();
+        } else {
+          const message = data?.message || data?.errors?.join(', ') || `Erro ${response.status}`;
+          showResult(`Falha ao cadastrar: ${message}\n\n${JSON.stringify(data, null, 2)}`, 'error');
+        }
+      } catch (err) {
+        showResult(`Não foi possível conectar à API em "${apiUrl}".\nVerifique se o servidor está rodando (npm run dev / docker compose up).\n\nDetalhe: ${err.message}`, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Cadastrar usuário';
+      }
+    });
+  </script>
+</body>
+</html>

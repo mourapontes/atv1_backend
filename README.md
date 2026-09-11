@@ -118,6 +118,8 @@ src/
 scripts/
   demo.js                # Script de demonstração ao vivo (chama todos os endpoints)
   init-multiple-databases.sh  # Cria os bancos dev/test no container do PostgreSQL
+public/
+  cadastro-usuario.html  # Formulário HTML para cadastro de perfil (POST /api/profiles) via navegador
 tests/
   *.test.js              # Testes de integração (Jest + Supertest)
 Dockerfile               # Imagem da API (Node 20)
@@ -302,8 +304,13 @@ curl http://localhost:3555/api/projects
 
 ## Testando localmente pelo navegador
 
-Com o servidor rodando (`npm run dev` ou `docker compose up`), a barra de endereço do navegador já faz requisições `GET` diretamente, sem precisar de `curl` ou Postman. Clique nos links abaixo (com a API de pé em `localhost:3555`):
+Com o servidor rodando (`npm run dev` ou `docker compose up`), a barra de endereço do navegador já faz requisições `GET` diretamente, sem precisar de `curl` ou Postman.
 
+Para cadastrar um perfil sem usar `curl`/DevTools, abra o formulário [`public/cadastro-usuario.html`](public/cadastro-usuario.html) diretamente no navegador, ou, com a API rodando, acesse [http://localhost:3555/public/cadastro-usuario.html](http://localhost:3555/public/cadastro-usuario.html) — ele envia um `POST /api/profiles` para a API (por padrão em `http://localhost:3555`, editável no próprio formulário).
+
+Clique nos links abaixo (com a API de pé em `localhost:3555`):
+
+- [http://localhost:3555/public/cadastro-usuario.html](http://localhost:3555/public/cadastro-usuario.html)
 - [http://localhost:3555/api/profiles/1](http://localhost:3555/api/profiles/1)
 - [http://localhost:3555/api/technologies](http://localhost:3555/api/technologies)
 - [http://localhost:3555/api/projects](http://localhost:3555/api/projects)
