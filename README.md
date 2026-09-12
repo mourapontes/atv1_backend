@@ -12,7 +12,6 @@ Backend da plataforma **DevShowcase**.
 | Curso | Tecnologia em Sistemas para Internet |
 | Disciplina | Backend |
 | Atividade | Modelagem de domínio, persistência e endpoints básicos |
-| Prazo | 05/09/2026 às 18h00 até 25/09/2026 às 23h59 |
 
 **Objetivo da atividade:** nesta primeira etapa do projeto prático, dar início ao desenvolvimento do backend da plataforma DevShowcase API, implementando a fundação arquitetural da aplicação com suporte a persistência de dados relacional.
 
